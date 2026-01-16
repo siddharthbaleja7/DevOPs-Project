@@ -16,7 +16,7 @@ jobs:
         run: |
           docker build -t test-img .
           docker run -d -p 8080:8080 --name test-app test-img
-          sleep 10
+          sleep 15
           curl --fail http://localhost:8080/ || exit 1
           docker stop test-app && docker rm test-app
 

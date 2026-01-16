@@ -29,27 +29,28 @@ jobs:
         with:
           languages: java
 
-      # Manual Build to ensure CodeQL "sees" the com.example code
       - name: Build for CodeQL
-        run: mvn clean compile -DskipTests
+        run: ./mvnw clean compile -DskipTests
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
 
       - name: Code Linting (Checkstyle)
-        run: mvn checkstyle:check || echo "Linting finished with warnings"
+        run: ./mvnw checkstyle:check || echo "Linting finished with warnings"
 
       - name: Unit Tests
-        run: mvn test
+        run: ./mvnw test
+
+      - name: Setup Snyk CLI
+        uses: snyk/actions/setup@master
 
       - name: SCA (Snyk Dependency Scan)
-        uses: snyk/actions/maven@master
+        run: snyk test --severity-threshold=high
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-          LD_PRELOAD: ""
 
       - name: Build Final Artifact
-        run: mvn package -DskipTests
+        run: ./mvnw package -DskipTests
 
       - name: Build Docker Image
         run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/advanced-app:${{ github.sha }} .
