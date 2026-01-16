@@ -8,38 +8,49 @@ on:
 jobs:
   quality-and-security:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
 
-      - name: Setup Java
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java Runtime
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Code Linting
-        run: mvn checkstyle:check || echo "Checkstyle finished"
-
-      - name: SAST (CodeQL)
+      - name: Initialize CodeQL (SAST)
         uses: github/codeql-action/init@v3
         with:
           languages: java
-      - name: Perform SAST
+
+      # Manual Build to ensure CodeQL "sees" the com.example code
+      - name: Build for CodeQL
+        run: mvn clean compile -DskipTests
+
+      - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
+
+      - name: Code Linting (Checkstyle)
+        run: mvn checkstyle:check || echo "Linting finished with warnings"
 
       - name: Unit Tests
         run: mvn test
 
-      - name: SCA (Dependency Scan)
+      - name: SCA (Snyk Dependency Scan)
         uses: snyk/actions/maven@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
-      - name: Build Artifact
+      - name: Build Final Artifact
         run: mvn package -DskipTests
 
-      - name: Docker Build & Scan
+      - name: Build Docker Image
         run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/advanced-app:${{ github.sha }} .
 
       - name: Image Scan (Trivy)
