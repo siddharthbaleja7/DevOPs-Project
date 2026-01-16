@@ -46,6 +46,7 @@ jobs:
         uses: snyk/actions/maven@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+          LD_PRELOAD: ""
 
       - name: Build Final Artifact
         run: mvn package -DskipTests
