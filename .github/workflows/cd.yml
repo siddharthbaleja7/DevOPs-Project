@@ -1,0 +1,32 @@
+name: CD Pipeline
+
+on:
+  workflow_run:
+    workflows: ["CI Pipeline"]
+    types: [completed]
+
+jobs:
+  deploy-to-registry:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Runtime Validation (Smoke Test)
+        run: |
+          docker build -t test-img .
+          docker run -d -p 8080:8080 --name test-app test-img
+          sleep 10
+          curl --fail http://localhost:8080/ || exit 1
+          docker stop test-app && docker rm test-app
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push Trusted Image
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/advanced-app:latest .
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/advanced-app:latest

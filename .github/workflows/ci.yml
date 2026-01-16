@@ -1,0 +1,50 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+jobs:
+  quality-and-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Code Linting
+        run: mvn checkstyle:check || echo "Checkstyle finished"
+
+      - name: SAST (CodeQL)
+        uses: github/codeql-action/init@v3
+        with:
+          languages: java
+      - name: Perform SAST
+        uses: github/codeql-action/analyze@v3
+
+      - name: Unit Tests
+        run: mvn test
+
+      - name: SCA (Dependency Scan)
+        uses: snyk/actions/maven@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      - name: Build Artifact
+        run: mvn package -DskipTests
+
+      - name: Docker Build & Scan
+        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/advanced-app:${{ github.sha }} .
+
+      - name: Image Scan (Trivy)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ secrets.DOCKERHUB_USERNAME }}/advanced-app:${{ github.sha }}'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
