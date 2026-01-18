@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: advanced-app
+  labels:
+    app: advanced-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: advanced-app
+  template:
+    metadata:
+      labels:
+        app: advanced-app
+    spec:
+      containers:
+        - name: advanced-app
+          image: siddharthbaleja/advanced-app:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "prod"
+          resources:
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 5
