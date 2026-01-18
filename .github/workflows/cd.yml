@@ -23,7 +23,6 @@ jobs:
       - name: Build Artifact
         run: ./mvnw package -DskipTests
 
-      # FIX: Set up Docker Buildx
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -49,28 +48,14 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # Push both latest and SHA tagged images
+      # ✅ FIXED: Proper image tags
       - name: Build and Push Docker Images
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/advanced-app:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/advanced-app:${{ github.sha }}
+            siddharthbaleja/advanced-app:latest
+            siddharthbaleja/advanced-app:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      # NEW: Update Kubernetes deployment image
-      - name: Update Kubernetes Manifests
-        run: |
-          sed -i "s|image:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/advanced-app:${{ github.sha }}|g" k8s/deployment.yaml
-
-      - name: Commit Updated Manifests
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add k8s/deployment.yaml
-          git diff --quiet && git diff --staged --quiet || git commit -m "Update image to ${{ github.sha }}"
-          git push
-        continue-on-error: true
