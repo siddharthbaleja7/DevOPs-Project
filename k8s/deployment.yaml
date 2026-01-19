@@ -17,6 +17,7 @@ spec:
       containers:
         - name: advanced-app
           image: siddharthbaleja/advanced-app:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
           env:
