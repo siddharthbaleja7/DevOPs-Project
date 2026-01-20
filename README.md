@@ -115,7 +115,6 @@ This project implements "Shift-Left" security:
 - **SAST:** CodeQL scans for code vulnerabilities.
 - **SCA:** Snyk scans dependencies for CVEs.
 - **Container Scan:** Trivy scans the Docker image for OS vulnerabilities.
-- **DAST:** OWASP ZAP scans the running application.
 - **Runtime:** Runs as a non-root user (`devopsuser`).
 
 ---
@@ -132,7 +131,7 @@ This repository uses **GitHub Actions** for automation:
 2.  **CD Pipeline** (`cd.yml`):
     - Triggered after successful CI.
     - Deploys to Kubernetes (Kind).
-    - Performs Smoke Tests and DAST scans.
+    - Performs Smoke Tests.
 ---
 
 ## 📜 License
