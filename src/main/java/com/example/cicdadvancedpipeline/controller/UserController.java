@@ -26,8 +26,15 @@ public class UserController {
         return userService.getAllUsers();
     }
 
+    @GetMapping("/hello")
+    public String hello() {
+        return "Hello, World!";
+    }
+
     @PostMapping
     public UserDTO createUser(@RequestBody UserDTO userDTO) {
         return userService.createUser(userDTO);
     }
+
+
 }

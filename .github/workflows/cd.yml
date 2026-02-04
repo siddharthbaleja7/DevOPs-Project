@@ -73,5 +73,5 @@ jobs:
         run: |
           kubectl port-forward service/advanced-app-service 8080:8080 &
           sleep 15
-          curl --retry 10 --retry-delay 3 --retry-connrefused --fail http://localhost:8080/
+          curl --retry 10 --retry-delay 3 --retry-connrefused --fail http://localhost:8080/hello
           echo "✅ Kubernetes deployment successful!"
