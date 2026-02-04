@@ -35,7 +35,7 @@ jobs:
         uses: github/codeql-action/analyze@v3
 
       - name: Code Linting (Checkstyle)
-        run: ./mvnw checkstyle:check || echo "Linting finished with warnings"
+        run: ./mvnw checkstyle:check
 
       - name: Unit Tests
         run: ./mvnw test
@@ -44,10 +44,9 @@ jobs:
         uses: snyk/actions/setup@master
 
       - name: SCA (Snyk Dependency Scan)
-        run: snyk test --severity-threshold=high || echo "Snyk scan completed"
+        run: snyk test --severity-threshold=high
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        continue-on-error: true
 
       - name: Build Final Artifact
         run: ./mvnw package -DskipTests
@@ -55,7 +54,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # ✅ FIXED: Added proper image naming
       - name: Build Docker Image
         uses: docker/build-push-action@v5
         with:
@@ -82,3 +80,40 @@ jobs:
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
+      
+      # - name: Set up Docker Buildx
+      #   uses: docker/setup-buildx-action@v3
+
+      - name: Build Test Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          load: true
+          tags: test-img:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Runtime Validation (Smoke Test)
+        run: |
+          docker run -d -p 8080:8080 --name test-app test-img:latest
+          sleep 20
+          curl --retry 5 --retry-delay 3 --retry-connrefused --fail http://localhost:8080/
+          docker stop test-app && docker rm test-app
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and Push Docker Images
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            siddharthbaleja/advanced-app:latest
+            siddharthbaleja/advanced-app:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
